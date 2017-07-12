@@ -6,7 +6,7 @@
 ## Overview 
 
 This library supports the construction and interpretation of decision trees
-and their ensembles, along with utilities for visualing trees and generating summaries of data. 
+and their ensembles, along with utilities for visualizing trees and generating summaries of data. 
 
 ## References
 

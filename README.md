@@ -1,8 +1,14 @@
 # CART
 
+![image of olive tree](olive.png)
+
+
+## Overview 
+
 This library supports the construction and interpretation of decision trees
 and their ensembles, along with utilities for visualing trees and generating summaries of data. 
 
+## References
 
 Directly based on the ideas and work laid out in:
 
@@ -12,6 +18,10 @@ Directly based on the ideas and work laid out in:
   * Freund, Yoav, and Robert E. Schapire. "A desicion-theoretic generalization of on-line learning and an application to boosting." European conference on computational learning theory. Springer, Berlin, Heidelberg, 1995.
   * Friedman, Jerome H. "Greedy function approximation: a gradient boosting machine." Annals of statistics (2001): 1189-1232.
 
+
+The drawing of the olive tree is by [Ulisse Aldrovandi](https://en.wikipedia.org/wiki/Ulisse_Aldrovandi).
+
+## Copyright and Licensing 
 
 Copyright © 2017 Arthur Maciejewicz
 

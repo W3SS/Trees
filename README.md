@@ -2,11 +2,24 @@
 
 ![image of olive tree](olive.png)
 
-
+**C**lassification **A**nd **R**egression **T**rees
+ 
 ## Overview 
 
 This library supports the construction and interpretation of decision trees
 and their ensembles, along with utilities for visualizing trees and generating summaries of data. 
+
+## Usage
+
+TODO: Write some examples
+
+## FAQ
+
+### What are decision trees?
+
+### What are ensembles?
+
+### Why should I use decision trees instead of some other method?
 
 ## References
 

@@ -98,8 +98,7 @@
             (transient [])
             is)))
 
-;; assumes our ghetto data-frame structure
-;; TODO: preserve count and shit
+;; TODO: preserve count and other metadata
 (defn select-by-indices-df
   [df is]
   ;;(println "GIVEN INDICES: " is)

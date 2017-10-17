@@ -66,8 +66,13 @@
                     best-error      (:error acc)
                     best-feature    (:feature acc)
                     fvs             (df/get-attribute-values data feature)
+
+                    ;; left split contains points where feature value is zero
                     left-split      (df/select-by-indices-df data (satisfies-pred? zero? fvs))
+
+                    ;; right split contains points where feature value is one
                     right-split     (df/select-by-indices-df data (satisfies-pred? #(= % 1) fvs))
+
                     A (df/get-attribute-values left-split target)
                     B (df/get-attribute-values right-split target)
                     left-mistakes   (node-misclassified A)

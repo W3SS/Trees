@@ -7,7 +7,6 @@
 ;;
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 (defn get-attribute-values
   [data feature]
   (get-in data [feature :values]))
@@ -19,6 +18,26 @@
 
 
 (def reserved-keys #{:df/count :df/source :df/source-type})
+
+
+(defn validate!
+  [df]
+  (when-not (map? df)
+    (throw (ex-info "Not a map!" {:type (type df)})))
+
+  (when (nil? (:df/count df))
+    (throw (ex-info "Dataframe must have a count!" {})))
+
+  (doseq [[k v] df
+          :when (not (reserved-keys k))]
+    (when-not (map? v)
+      (throw (ex-info "Inner map was not a map!" {:type (type v)})))
+
+    (when (or (nil? (:values v))
+              (nil? (:storage-type v))
+              (nil? (:domain-type v)))
+      (throw (ex-info "required keys are missing!" {:keys (keys v)})))))
+
 
 
 (defn keep-attributes

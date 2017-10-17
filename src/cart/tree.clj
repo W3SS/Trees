@@ -1,8 +1,9 @@
-(ns cart.simple
+(ns cart.tree
   "Simple proof-of-concept of decision tree learning in pure Clojure"
   (:require [clojure-csv.core :as csv]
             [clojure.java.io :as io]
-            [cart.dataframe :as df])
+            [cart.dataframe :as df]
+            [taoensso.timbre :as log])
   (:import (clojure.lang ILookup)))
 
 
@@ -61,7 +62,7 @@
         num-data-points (float (df/df-count data))]
     ;; Loop through each feature to consider splitting on that feature
     (reduce (fn [acc feature]
-              (let [;;_ (println "CHOSEN FEATURE" feature)
+              (let [;;_ (log/debug "CHOSEN FEATURE" feature)
                     best-error      (:error acc)
                     best-feature    (:feature acc)
                     fvs             (df/get-attribute-values data feature)
@@ -88,10 +89,12 @@
       {:prediction :neg :leaf? true})))
 
 
-(defn decision-tree-create
-  ([data features target] (decision-tree-create data features target 0 10))
+(defn learn
+  ([data features target] (learn data features target 0 10))
   ([data features target current-depth max_depth]
-
+   (df/validate! data)
+   (when (not (set? features))
+     (throw (IllegalArgumentException. "features must be a set")))
     ;; Stopping condition 1:
     ;;   Check if there are mistakes at current node.
     ;; Stopping condition 2 (check if there are remaining features to consider splitting on)
@@ -99,21 +102,21 @@
     ;; Stopping condition 3:
     ;;   Reached maximum depth
 
-   (let [;_ (println "DF: " data)
-         target-values (df/get-attribute-values data target)
-         _ (println "--------------------------------------------------------------------")
-         _ (println (format "Subtree, depth = %s (%s data points)." current-depth (count target-values)))]
-     (cond (zero? (node-misclassified target-values)) (do (println "Stopping condition 1 reached.")
+   (let [target-values (df/get-attribute-values data target)
+         _ (log/debug "--------------------------------------------------------------------")
+         _ (log/debug (format "Subtree, depth = %s (%s data points)." current-depth (count target-values)))]
+     (cond (zero? (node-misclassified target-values)) (do (log/debug "Stopping condition 1 reached.")
                                                           ;; If not mistakes at current node, make current node a leaf node
                                                           (create-leaf target-values))
 
-           (empty? features) (do (println "Stopping condition 2 reached.")
+           (empty? features) (do (log/debug "Stopping condition 2 reached.")
                                  (create-leaf target-values))
 
-           (>= current-depth max_depth) (do (println "Reached maximum depth. Stopping for now.")
+           (>= current-depth max_depth) (do (log/debug "Reached maximum depth. Stopping for now.")
                                             (create-leaf target-values))
 
-           :default (let [result (find-best-splitting-feature data features target)
+           :default (let [_ (log/debug "FELL THROUGH ALL")
+                          result (find-best-splitting-feature data features target)
                           splitting-feature (:feature result)
                           splitting-error (:error result)
                           fvs                 (df/get-attribute-values data splitting-feature)
@@ -121,17 +124,17 @@
                           right-split         (df/select-by-indices-df data (satisfies-pred? #(= % 1) fvs))
                           remaining-features  (disj features splitting-feature)]
 
-                      (println (format "Split on feature %s. (%s, %s)" splitting-feature (df/df-count left-split) (df/df-count right-split)))
+                      (log/debug (format "Split on feature %s. (%s, %s)" splitting-feature (df/df-count left-split) (df/df-count right-split)))
 
                       ;; Create a leaf node if the split is "perfect"
                       (cond (= (df/df-count left-split) (df/df-count data))   (do
-                                                                                (println "Creating leaf node.")
+                                                                                (log/debug "Creating leaf node.")
                                                                                 (create-leaf (df/get-attribute-values left-split target)))
                             (= (df/df-count right-split) (df/df-count data))  (do
-                                                                                (println "Creating leaf node.")
+                                                                                (log/debug "Creating leaf node.")
                                                                                 (create-leaf (df/get-attribute-values right-split target)))
-                            :default (let [left-tree  (decision-tree-create left-split remaining-features target (inc current-depth) max_depth)
-                                           right-tree (decision-tree-create right-split remaining-features target (inc current-depth) max_depth)]
+                            :default (let [left-tree  (learn left-split remaining-features target (inc current-depth) max_depth)
+                                           right-tree (learn right-split remaining-features target (inc current-depth) max_depth)]
                                        {:leaf? false
                                         :left left-tree
                                         :right right-tree
@@ -143,7 +146,7 @@
   a record X, return the predicted label"
   [tree x]
   (if (:leaf? tree)
-    (:prediction tree)
+    (if (= (:prediction tree) :pos) 1 -1)
     (let [split_feature_value (get x (:splitting-feature tree))]
       (if (zero? split_feature_value)
         (recur (:left tree) x)

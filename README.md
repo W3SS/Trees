@@ -17,9 +17,12 @@ TODO: Write some examples
 
 ### What are decision trees?
 
-### What are ensembles?
+They are a class of nonparametric model suitable for both classification and regression.
 
 ### Why should I use decision trees instead of some other method?
+
+They are interpretable by design and can be very accurate. [Scikit](http://scikit-learn.org/stable/modules/tree.html) gives
+a list of good reasons to use them.
 
 ## References
 

@@ -7,6 +7,10 @@
   (:import (clojure.lang ILookup)))
 
 
+;; NOTE: this namespace assumes binary-encoded features for decision-trees.
+;; You have to pre-binarize attributes before learning the tree.
+
+
 (defn count-pos-and-neg
   [xs]
   (reduce (fn [[pos neg] x]

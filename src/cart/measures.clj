@@ -20,10 +20,13 @@
 
 (defn fall-into-node-with-class-j-probability
   "p(j,t) - Estimate for the probability that
-   a case will both be in class j and fall into node t"
+   a case will both be in class j and fall into node t
+
+   PI(j) * N_t(j) / N(j)"
   [node
    class-j
    priors]
+
   )
 
 
@@ -46,8 +49,9 @@
 (defn node-cost
   "r(t)"
   [node
-   misclassification-cost
-   classes]
+   classes
+   priors
+   misclassification-cost]
   (m/min (fn [class-i]
            (sum (for [class-j classes
                       :when (not= class-j class-i)]
@@ -83,13 +87,16 @@
    misclassification-cost]
   (sum
     (for [node (get-terminal-nodes tree [])]
-      (* (node-cost node misclassification-cost classes)  ;; r(t)
+      (* (node-cost node classes priors misclassification-cost)  ;; r(t)
          (fall-into-node-probability node classes priors)))))  ;; p(t)
 
 
 (defn pruning-objective
   "The \"Minimum Cost Complexity\" Tree Objective as defined in CART"
-  [tree alpha]
+  [tree alpha
+   classes
+   priors
+   misclassification-cost]
   (+ ;; R(T)
     (tree-cost tree classes priors misclassification-cost)
     ;; a*|~T|

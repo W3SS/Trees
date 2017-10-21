@@ -1,21 +1,5 @@
 (ns cart.measures
-  (:require [cart.math :as m]))
-
-
-;; FIXME: use Kahan or recursive summation
-(defn sum
-  ""
-  [xs]
-  (reduce + xs))
-
-
-(defn count-pred
-  [p xs]
-  (reduce (fn [acc x]
-            (if (p x)
-              (inc acc)
-              acc))
-          0))
+  (:require [cart.math :as m :refer [sum]]))
 
 
 ;; Given a learning sample L for a J class problem
@@ -92,8 +76,8 @@
   [tree]
   (if (and (nil? (:left tree)) (nil? (:right tree)))
     1
-    (+ (recur (:left tree))
-       (recur (:right tree)))))
+    (+ (tree-complexity (:left tree))
+       (tree-complexity (:right tree)))))
 
 
 (defn get-terminal-nodes

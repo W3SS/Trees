@@ -1,7 +1,7 @@
 (ns cart.model)
 
 (def tree-node
-  {
+  #{
    :type         ;; :leaf, :branch, :cut, :subset
    :class        ;; most frequent class at this node
    :items        ;; number of items at this node
@@ -18,7 +18,7 @@
 
 
 (def attribute-test
-  {
+  #{
    :type         ;; node test type (see tree node)
    :attribute    ;; attribute tested
    :forks        ;; possible branches
@@ -27,13 +27,13 @@
    })
 
 (def outcome
-  {:test
+  #{:test
    :outcome
    })
 
 
 (def rule
-  {
+  #{
    :condition-count ;; number of conditions
    :conditions      ;; the rule conditions
    :class           ;; class given by rule
@@ -45,7 +45,7 @@
 
 
 (def rule-set
-  {
+  #{
    :rules           ;; rules
    :rules-count     ;; number of rules
    :ranking         ;; ranking of rules

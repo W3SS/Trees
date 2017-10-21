@@ -48,3 +48,10 @@
 (defn arg-min
   [f xs]
   (first (find-minimal-values f xs)))
+
+
+;; FIXME: use Kahan or recursive summation
+(defn sum
+  ""
+  [xs]
+  (reduce + xs))

@@ -8,4 +8,5 @@
                  [com.taoensso/timbre "4.10.0"]]
 
   :profiles {:dev {:dependencies [[org.clojure/test.check "0.10.0-alpha2"]
-                                  [walmartlabs/datascope "0.1.1"]]}})
+                                  [walmartlabs/datascope "0.1.1"]]
+                   :plugins [[lein-cloverage "1.0.9"]]}})

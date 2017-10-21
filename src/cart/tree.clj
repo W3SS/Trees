@@ -3,6 +3,7 @@
   (:require [clojure-csv.core :as csv]
             [clojure.java.io :as io]
             [cart.dataframe :as df]
+            [cart.math :refer [sum]]
             [taoensso.timbre :as log])
   (:import (clojure.lang ILookup)))
 
@@ -18,7 +19,7 @@
 (defn node-misclassified
   "Sums the counts of non-majority classes within a node"
   [class-counts]
-  (reduce + (vals (dissoc class-counts (get-majority-class class-counts)))))
+  (sum (vals (dissoc class-counts (get-majority-class class-counts)))))
 
 
 (defn satisfies-pred?
@@ -43,6 +44,16 @@
 ;;                    Decision Tree Stuff
 ;;
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+(defn sub-branch-mistakes
+  [data indices target]
+  (-> data
+      (df/select-by-indices-df indices)
+      (df/get-attribute-values target)
+      (frequencies)
+      (node-misclassified)))
+
+
 (defn find-best-splitting-feature
   "Searches across all features to find the one with lowest error"
   [data features target]
@@ -53,19 +64,8 @@
               (let [best-error      (:error acc)
                     best-feature    (:feature acc)
                     feature-values  (df/get-attribute-values data feature)
-
-                    left-mistakes   (-> data
-                                        (df/select-by-indices-df (satisfies-pred? zero? feature-values))
-                                        (df/get-attribute-values target)
-                                        (frequencies)
-                                        (node-misclassified))
-
-                    right-mistakes  (-> data
-                                        (df/select-by-indices-df (satisfies-pred? #(= % 1) feature-values))
-                                        (df/get-attribute-values target)
-                                        (frequencies)
-                                        (node-misclassified))
-
+                    left-mistakes   (sub-branch-mistakes data (satisfies-pred? zero? feature-values) target)
+                    right-mistakes  (sub-branch-mistakes data (satisfies-pred? #(= % 1) feature-values) target)
                     error           (/ (+ left-mistakes right-mistakes) num-data-points)]
                 (if (< error best-error)
                   {:error error :feature feature}

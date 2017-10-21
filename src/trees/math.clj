@@ -1,4 +1,4 @@
-(ns cart.math
+(ns trees.math
   (:refer-clojure :exclude [max min]))
 
 

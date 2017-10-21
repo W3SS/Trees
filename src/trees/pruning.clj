@@ -1,5 +1,5 @@
-(ns cart.pruning
-  (:require [cart.measures :as m]))
+(ns trees.pruning
+  (:require [trees.measures :as m]))
 
 
 (defn terminal?

@@ -1,14 +1,26 @@
-(ns cart.tree-test
+(ns trees.tree-test
   (:require [clojure.test :refer :all]
-            [cart.tree :as t]))
+            [trees.tree :as t]))
+
+
+(deftest get-majority-class
+  (is (= (t/get-majority-class {:one 1 :two 2 :three 3 :four 4}) :four)))
+
 
 (deftest node-misclassified-test
   (is (= (t/node-misclassified {:pos 10 :neg 100}) 10))
   (is (= (t/node-misclassified {:pos 10 :neg 100 :other 1000}) 110)))
 
+
+(deftest satisfies-pred?
+  (is (= (t/satisfies-pred? odd? (range 3 11)) [0 2 4 6]))
+  (is (= (t/satisfies-pred? even? (range 3 11)) [1 3 5 7])))
+
+
 (deftest create-leaf
   (is (= (t/create-leaf {:pos 10 :neg 100})
          {:leaf? true :prediction :neg :class-counts {:pos 10 :neg 100}})))
+
 
 (deftest classifies-xor
          (let [;; | o     x
@@ -64,5 +76,4 @@
     (is (= (t/classify tree2 {"x1" 0 "x2" 0}) 1))
     (is (= (t/classify tree2 {"x1" 0 "x2" 1}) -1))
     (is (= (t/classify tree2 {"x1" 1 "x2" 0}) 1))
-    (is (= (t/classify tree2 {"x1" 1 "x2" 1}) -1))
-    ))
+    (is (= (t/classify tree2 {"x1" 1 "x2" 1}) -1))))

@@ -1,6 +1,6 @@
-(ns cart.core-test
+(ns trees.core-test
   (:require [clojure.test :refer :all]
-            [cart.dataframe :as df]))
+            [trees.dataframe :as df]))
 
 
 (deftest dataframe-count

@@ -1,4 +1,4 @@
-(ns cart.model)
+(ns trees.model)
 
 (def tree-node
   #{

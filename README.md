@@ -1,8 +1,8 @@
-# CART
+# Trees 
 
 ![image of olive tree](olive.png)
 
-**C**lassification **A**nd **R**egression **T**rees
+**Classification **And **Regression **Trees
  
 ## Overview 
 

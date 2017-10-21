@@ -1,6 +1,6 @@
-(ns cart.math-test
+(ns trees.math-test
   (:require [clojure.test :refer :all]
-            [cart.math :as m]))
+            [trees.math :as m]))
 
 
 (deftest find-min

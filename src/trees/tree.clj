@@ -1,9 +1,9 @@
-(ns cart.tree
+(ns trees.tree
   "Simple proof-of-concept of decision tree learning in pure Clojure"
   (:require [clojure-csv.core :as csv]
             [clojure.java.io :as io]
-            [cart.dataframe :as df]
-            [cart.math :refer [sum]]
+            [trees.dataframe :as df]
+            [trees.math :refer [sum]]
             [taoensso.timbre :as log])
   (:import (clojure.lang ILookup)))
 

@@ -1,5 +1,5 @@
-(ns cart.measures
-  (:require [cart.math :as m :refer [sum]]))
+(ns trees.measures
+  (:require [trees.math :as m :refer [sum]]))
 
 
 ;; Given a learning sample L for a J class problem

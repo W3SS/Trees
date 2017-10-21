@@ -21,7 +21,6 @@
              (terminal? (:right tree)))
       (if (= (cost-fn tree)
              (+ (cost-fn (:left tree)) (cost-fn (:right tree))))
-
         (dissoc tree :left :right)
         tree)
       (let [left-subtree (recur (:left tree) classes priors misclassification-cost)

@@ -76,6 +76,8 @@
 
 ;; TODO: preserve count and other metadata
 (defn select-by-indices-df
+  "Given a set of indices, we return a new dataframe
+  with the selected values"
   [df is]
   ;;(println "GIVEN INDICES: " is)
   (assoc

@@ -9,37 +9,20 @@
 
 ;; NOTE: this namespace assumes binary-encoded features for decision-trees.
 ;; You have to pre-binarize attributes before learning the tree.
-
-
-(defn count-pos-and-neg
-  [xs]
-  (reduce (fn [[pos neg] x]
-            (if (= 1 x)
-              [(inc pos) neg]
-              [pos (inc neg)]))
-          [0 0]
-          xs))
+(defn get-majority-class
+  "Finds the key with highest value in the map"
+  [counts]
+  (first (apply max-key second counts)))
 
 
 (defn node-misclassified
-  "Majority wins"
-  [labels-in-node]
-  (if (empty? labels-in-node)
-    (long 0)
-    (long (apply min (count-pos-and-neg labels-in-node)))))
-
-
-(comment
-  (def ex1 [-1, -1, 1, 1, 1])
-  (def ex2 [-1, -1, 1, 1, 1, 1, 1])
-  (def ex3 [-1, -1, -1, -1, -1, 1, 1])
-
-  (assert (= (node-misclassified ex1) 2))
-  (assert (= (node-misclassified ex2) 2))
-  (assert (= node-misclassified ex3) 2))
+  "Sums the counts of non-majority classes within a node"
+  [class-counts]
+  (reduce + (vals (dissoc class-counts (get-majority-class class-counts)))))
 
 
 (defn satisfies-pred?
+  "Returns the indices of values which matched the predicate"
   [p xs]
   (keep-indexed (fn [i v] (when (p v) i)) xs))
 
@@ -55,32 +38,34 @@
 
 ;; TODO: cross-validation
 
+
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;;                    Decision Tree Stuff
 ;;
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 (defn find-best-splitting-feature
+  "Searches across all features to find the one with lowest error"
   [data features target]
   (let [target-values   (df/get-attribute-values data target)
         num-data-points (float (df/df-count data))]
     ;; Loop through each feature to consider splitting on that feature
     (reduce (fn [acc feature]
-              (let [;;_ (log/debug "CHOSEN FEATURE" feature)
-                    best-error      (:error acc)
+              (let [best-error      (:error acc)
                     best-feature    (:feature acc)
-                    fvs             (df/get-attribute-values data feature)
+                    feature-values  (df/get-attribute-values data feature)
 
-                    ;; left split contains points where feature value is zero
-                    left-split      (df/select-by-indices-df data (satisfies-pred? zero? fvs))
+                    left-mistakes   (-> data
+                                        (df/select-by-indices-df (satisfies-pred? zero? feature-values))
+                                        (df/get-attribute-values target)
+                                        (frequencies)
+                                        (node-misclassified))
 
-                    ;; right split contains points where feature value is one
-                    right-split     (df/select-by-indices-df data (satisfies-pred? #(= % 1) fvs))
+                    right-mistakes  (-> data
+                                        (df/select-by-indices-df (satisfies-pred? #(= % 1) feature-values))
+                                        (df/get-attribute-values target)
+                                        (frequencies)
+                                        (node-misclassified))
 
-                    A (df/get-attribute-values left-split target)
-                    B (df/get-attribute-values right-split target)
-                    left-mistakes   (node-misclassified A)
-                    right-mistakes  (node-misclassified B)
                     error           (/ (+ left-mistakes right-mistakes) num-data-points)]
                 (if (< error best-error)
                   {:error error :feature feature}
@@ -90,12 +75,12 @@
 
 
 (defn create-leaf
-  [target-values]
-  ;; Create a leaf node
-  (let [[num-pos num-neg] (count-pos-and-neg target-values)]
-    (if (> num-pos num-neg)
-      {:prediction :pos :leaf? true}
-      {:prediction :neg :leaf? true})))
+  "Given a mapping from class -> count in node,
+  creates a tree leaf node"
+  [class-counts]
+  {:prediction (get-majority-class class-counts)
+   :leaf? true
+   :class-counts class-counts})
 
 
 (defn learn
@@ -113,21 +98,23 @@
 
    (let [target-values (df/get-attribute-values data target)
          _ (log/debug "--------------------------------------------------------------------")
-         _ (log/debug (format "Subtree, depth = %s (%s data points)." current-depth (count target-values)))]
-     (cond (zero? (node-misclassified target-values)) (do (log/debug "Stopping condition 1 reached.")
+         _ (log/debug (format "Subtree, depth = %s (%s data points)." current-depth (count target-values)))
+
+         class-counts (frequencies target-values)]
+     (cond (zero? (node-misclassified class-counts)) (do (log/debug "Stopping condition 1 reached.")
                                                           ;; If not mistakes at current node, make current node a leaf node
-                                                          (create-leaf target-values))
+                                                          (create-leaf class-counts))
 
            (empty? features) (do (log/debug "Stopping condition 2 reached.")
-                                 (create-leaf target-values))
+                                 (create-leaf class-counts))
 
            (>= current-depth max_depth) (do (log/debug "Reached maximum depth. Stopping for now.")
-                                            (create-leaf target-values))
+                                            (create-leaf class-counts))
 
            :default (let [_ (log/debug "FELL THROUGH ALL")
-                          result (find-best-splitting-feature data features target)
-                          splitting-feature (:feature result)
-                          splitting-error (:error result)
+                          result              (find-best-splitting-feature data features target)
+                          splitting-feature   (:feature result)
+                          splitting-error     (:error result)
                           fvs                 (df/get-attribute-values data splitting-feature)
                           left-split          (df/select-by-indices-df data (satisfies-pred? zero? fvs))
                           right-split         (df/select-by-indices-df data (satisfies-pred? #(= % 1) fvs))
@@ -138,15 +125,16 @@
                       ;; Create a leaf node if the split is "perfect"
                       (cond (= (df/df-count left-split) (df/df-count data))   (do
                                                                                 (log/debug "Creating leaf node.")
-                                                                                (create-leaf (df/get-attribute-values left-split target)))
+                                                                                (create-leaf (frequencies (df/get-attribute-values left-split target))))
                             (= (df/df-count right-split) (df/df-count data))  (do
                                                                                 (log/debug "Creating leaf node.")
-                                                                                (create-leaf (df/get-attribute-values right-split target)))
+                                                                                (create-leaf (frequencies (df/get-attribute-values right-split target))))
                             :default (let [left-tree  (learn left-split remaining-features target (inc current-depth) max_depth)
                                            right-tree (learn right-split remaining-features target (inc current-depth) max_depth)]
                                        {:leaf? false
                                         :left left-tree
                                         :right right-tree
+                                        :class-counts class-counts
                                         :splitting-feature splitting-feature})))))))
 
 
@@ -155,11 +143,10 @@
   a record X, return the predicted label"
   [tree x]
   (if (:leaf? tree)
-    (if (= (:prediction tree) :pos) 1 -1)
-    (let [split_feature_value (get x (:splitting-feature tree))]
-      (if (zero? split_feature_value)
+    (:prediction tree)
+    (if (zero? (get x (:splitting-feature tree)))
         (recur (:left tree) x)
-        (recur (:right tree) x)))))
+        (recur (:right tree) x))))
 
 
 

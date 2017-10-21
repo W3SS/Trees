@@ -40,9 +40,8 @@
    class-j                ;; label class of interest
    priors                 ;; {PI(j)} the set of prior probabilities on each class j
    class-counts           ;; the frequencies of classes in the whole dataset
-   node-class-counts      ;; the frequencies of classes in each node
    ]
-  (* (get priors class-j) (/ (get-in node-class-counts [node class-j])
+  (* (get priors class-j) (/ (get-in node [:class-counts class-j])
                              (get class-counts class-j))))
 
 
@@ -53,24 +52,22 @@
    classes                ;; all possible labels J = {j}
    priors                 ;; {PI(j)} the set of prior probabilities on each class j
    class-counts           ;; the frequencies of classes in the whole dataset
-   node-class-counts      ;; the frequencies of classes in each node
    ]
   (sum (for [class-j classes]
-         (fall-into-node-with-class-j-probability node class-j priors class-counts node-class-counts))))
+         (fall-into-node-with-class-j-probability node class-j priors class-counts))))
 
 
 (defn class-j-given-node-probability
   "p(j|t) - Estimate of the probability that
    a case is in class j given that it falls into a node"
-  [node
-   class-j
-   classes
-   priors
-   class-counts
-   node-class-counts
+  [node           ;; the tree node
+   class-j        ;; the class label j
+   classes        ;; all possible labels J = {j}
+   priors         ;; {PI(j)} the set of prior probabilities on each class j
+   class-counts   ;; the frequencies of classes in the whole dataset
    ]
-  (/ (fall-into-node-with-class-j-probability node class-j priors class-counts node-class-counts)
-     (fall-into-node-probability node classes priors class-counts node-class-counts)))
+  (/ (fall-into-node-with-class-j-probability node class-j priors class-counts)
+     (fall-into-node-probability node classes priors class-counts)))
 
 
 (defn node-cost
@@ -80,13 +77,12 @@
    priors
    misclassification-cost
    class-counts             ;; the frequencies of classes in the whole dataset
-   node-class-counts        ;; the frequencies of classes in each node
    ]
   (m/min (fn [class-i]
            (sum (for [class-j classes
                       :when (not= class-j class-i)]
                   (* (misclassification-cost class-i class-j)
-                     (class-j-given-node-probability node class-j classes priors class-counts node-class-counts)))))
+                     (class-j-given-node-probability node class-j classes priors class-counts)))))
          classes))
 
 
@@ -115,24 +111,23 @@
    classes
    priors
    misclassification-cost
-   class-counts
-   node-class-counts]
+   class-counts]
   (sum
     (for [node (get-terminal-nodes tree [])]
-      (* (node-cost node classes priors misclassification-cost class-counts node-class-counts)  ;; r(t)
-         (fall-into-node-probability node classes priors class-counts node-class-counts)))))  ;; p(t)
+      (* (node-cost node classes priors misclassification-cost class-counts)  ;; r(t)
+         (fall-into-node-probability node classes priors class-counts)))))  ;; p(t)
 
 
 (defn pruning-objective
   "The \"Minimum Cost Complexity\" Tree Objective as defined in CART"
-  [tree alpha
+  [tree
+   alpha
    classes
    priors
    misclassification-cost
-   class-counts
-   node-class-counts]
+   class-counts]
   (+ ;; R(T)
-    (tree-cost tree classes priors misclassification-cost class-counts node-class-counts)
+    (tree-cost tree classes priors misclassification-cost class-counts)
     ;; a*|~T|
     (* alpha (tree-complexity tree))))
 

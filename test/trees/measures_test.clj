@@ -15,3 +15,9 @@
     (is (> neg-prob pos-prob))
     (is (= 0.05 neg-prob))
     (is (= 0.005 pos-prob))))
+
+
+(deftest accuracy
+  (let [y [0 0 0 0 1]
+        yhat [0 0 0 0 0]]
+    (is (= (float 0.8) (m/accuracy y yhat)))))

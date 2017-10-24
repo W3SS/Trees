@@ -77,3 +77,39 @@
     (is (= (t/classify tree2 {"x1" 0 "x2" 1}) -1))
     (is (= (t/classify tree2 {"x1" 1 "x2" 0}) 1))
     (is (= (t/classify tree2 {"x1" 1 "x2" 1}) -1))))
+
+
+
+(def sample-tree
+  {:class-counts {:pos 100 :neg 100}
+   :name :t1
+
+   :left {:name :t2
+          :class-counts {:pos 90 :neg 60}
+          :left   {:name :t4
+                   :class-counts {:pos 80 :neg 0}}
+          :right  {:name :t5
+                   :class-counts {:pos 10 :neg 60}
+                   :left {:name :t8
+                          :class-counts {:pos 0 :neg 60}}
+                   :right {:name :t9
+                           :class-counts {:pos 10 :neg 0}}}}
+
+   :right {:name :t3
+           :class-counts {:pos 10 :neg 40}
+           :left {:name :t6
+                  :class-counts {:pos 10 :neg 0}}
+           :right {:name :t7
+                   :class-counts {:pos 0 :neg 40}}}})
+
+
+(deftest weakest-link-scoring
+  (let [t1    sample-tree
+        t2    (get-in sample-tree [:left])
+        t3    (get-in sample-tree [:right])
+        t5    (get-in sample-tree [:left :right])
+        total 200]
+    (is (= (t/g-score t1 total) 1/8))
+    (is (= (t/g-score t2 total) 3/20))
+    (is (= (t/g-score t3 total) 1/20))
+    (is (= (t/g-score t5 total) 1/20))))

@@ -22,6 +22,87 @@
   (sum (vals (dissoc class-counts (get-majority-class class-counts)))))
 
 
+(defn total-number
+  [root]
+  (sum (vals (:class-counts root))))
+
+
+(defn node-resubstitution-error
+  "R(t)"
+  [node total]
+  (/ (node-misclassified (:class-counts node)) total))
+
+
+(defn terminal?
+  [node]
+  (and (nil? (:left node))
+       (nil? (:right node))))
+
+
+(defn non-terminal?
+  [node]
+  (or (seq (:left node))
+      (seq (:right node))))
+
+
+(defn get-nodes-pred
+  [tree pred]
+  (if (nil? tree)
+    ()
+    (let [left-nodes  (get-nodes-pred (:left tree) pred)
+          right-nodes (get-nodes-pred (:right tree) pred)
+          all-nodes   (concat left-nodes right-nodes)]
+      (if (pred tree)
+        (cons tree all-nodes)
+        all-nodes))))
+
+
+;; FIXME: can do this iteratively in a much safer way
+(defn get-terminal-nodes
+  [tree]
+  (get-nodes-pred tree terminal?))
+
+
+
+(defn get-non-terminal-nodes
+  [tree]
+  (get-nodes-pred tree non-terminal?))
+
+
+(defn tree-complexity
+  "A tree's complexity is defined as the
+  number of its terminal nodes"
+  [tree]
+  (cond (nil? tree) 0
+        (terminal? tree) 1
+        :else (+ (tree-complexity (:left tree))
+                 (tree-complexity (:right tree)))))
+
+
+(defn subtree-resubstitution-error
+  [subtree total]
+  (sum
+    (for [t (get-terminal-nodes subtree)]
+      (node-resubstitution-error t total))))
+
+
+;; WARN: the denominator in this expression is troubling
+(defn g-score
+  [node total]
+  (/ (- (node-resubstitution-error node total) (subtree-resubstitution-error node total))
+     (dec (tree-complexity node))))
+
+
+(defn prune-iteration
+  "Returns weakest links for a given iteration"
+  [tree total]
+  (let [scored-nodes (sort-by first (for [t (get-non-terminal-nodes tree)] [(g-score t total) t]))
+        ;; blegh this won't actually work
+        minimum-score (ffirst scored-nodes)
+        weakest-links (map second (take-while #(= (first %) minimum-score) scored-nodes))]
+    [minimum-score weakest-links]))
+
+
 (defn satisfies-pred?
   "Returns the indices of values which matched the predicate"
   [p xs]

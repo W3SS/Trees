@@ -115,3 +115,9 @@
     ;; a*|~T|
     (* alpha (tree-complexity tree))))
 
+
+(defn accuracy
+  "Compute accuracy"
+  [truth predictions]
+  (float (/ (sum (map #(if (= %1 %2) 1 0) truth predictions))
+            (count truth))))

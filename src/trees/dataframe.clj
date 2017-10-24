@@ -201,14 +201,16 @@
 ;; TODO: support for unboxed collections
 (defn from-csv
   ""
-  [file]
+  ([file]
+   (from-csv file \,))
+  ([file delimiter]
   (with-open [rdr (io/reader file)]
-    (let [raw-csv       (csv/parse-csv rdr)
+    (let [raw-csv       (csv/parse-csv rdr :delimiter delimiter)
           header        (first raw-csv)
           body          (rest raw-csv)
           base-df       (from-tabular header body {})]
       (assoc base-df :df/source file
-                     :df/source-type ::csv))))
+                     :df/source-type ::csv)))))
 
 
 ;; NOTE: we have a tough time enforcing uniformity in data-length here. Have to rely on invariants at construction time.

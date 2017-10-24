@@ -1,6 +1,9 @@
 (ns trees.dataframe
   (:require [clojure.java.io :as io]
-            [clojure-csv.core :as csv]))
+            [clojure-csv.core :as csv]
+            [clj-time.core :as t]
+            [clj-time.format :as tf]
+            [taoensso.timbre :as log]))
 
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ;;                    DataFrame Utilities
@@ -9,6 +12,7 @@
 
 (defn get-attribute-values
   [data feature]
+  (log/debug "GET " feature)
   (get-in data [feature :values]))
 
 
@@ -152,6 +156,46 @@
   (reduce binary-encode-attribute df attributes))
 
 
+(def converters
+  {:int (fn [x] (Integer/parseInt x))
+   :float (fn [x] (Float/parseFloat x))
+   :double (fn [x] (Double/parseDouble x))
+   :long (fn [x] (Long/parseLong x))
+   :date (fn [x] (tf/parse (tf/formatters :date) x))})
+
+
+(defn from-tabular
+  [header body types]
+  (let [short-buffers (vec (repeat (count header) []))
+        row-count     (atom 0)
+        extended-buffers (persistent! (reduce (fn [bufs row]
+                               (swap! row-count inc)
+                               (loop [bufs' bufs
+                                      vs row
+                                      i 0]
+                                 (if (seq vs)
+                                   (recur (assoc! bufs' i (conj (nth bufs' i) (first vs)))
+                                          (rest vs)
+                                          (inc i))
+                                   bufs')))
+                             (transient short-buffers)
+                             body))]
+    (into {:df/count @row-count}
+          (map (fn [k vs]
+                 (if-let [specified-type (get types k)]
+                   (let [converter (get converters specified-type)]
+                     [k {:storage-type specified-type
+                         :domain-type :unknown
+                         :values (map converter vs)}])
+                   [k {:storage-type :string
+                       :domain-type :unknown
+                       :values vs}]))
+               header
+               extended-buffers))))
+
+      ;;:df/source file
+      ;;:df/source-type :csv))
+
 
 ;; TODO: add ability to specify header...
 ;; TODO: support for unboxed collections
@@ -162,29 +206,9 @@
     (let [raw-csv       (csv/parse-csv rdr)
           header        (first raw-csv)
           body          (rest raw-csv)
-          short-buffers (vec (repeat (count header) []))
-          row-count     (atom 0)
-          extended-buffers (persistent!
-                             (reduce (fn [bufs row]
-                                       (swap! row-count inc)
-                                       (loop [bufs' bufs
-                                              vs row
-                                              i 0]
-                                         (if (seq vs)
-                                           (recur (assoc! bufs' i (conj (nth bufs' i) (first vs)))
-                                                  (rest vs)
-                                                  (inc i))
-                                           bufs')))
-                                     (transient short-buffers)
-                                     body))]
-      (assoc (into {} (map (fn [k vs] {k {:storage-type :string
-                                          :domain-type :unknown
-                                          :values vs}})
-                           header
-                           extended-buffers))
-        :df/count @row-count
-        :df/source file
-        :df/source-type :csv))))
+          base-df       (from-tabular header body {})]
+      (assoc base-df :df/source file
+                     :df/source-type ::csv))))
 
 
 ;; NOTE: we have a tough time enforcing uniformity in data-length here. Have to rely on invariants at construction time.

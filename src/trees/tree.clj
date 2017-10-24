@@ -19,6 +19,7 @@
 (defn node-misclassified
   "Sums the counts of non-majority classes within a node"
   [class-counts]
+  (log/debug class-counts)
   (sum (vals (dissoc class-counts (get-majority-class class-counts)))))
 
 
@@ -189,13 +190,19 @@
 (defn find-best-splitting-feature
   "Searches across all features to find the one with lowest error"
   [data features target]
+  (log/debug features)
+  (log/debug target)
+  ;; TODO: why get these a second time? Already calculated them before
   (let [target-values   (df/get-attribute-values data target)
         num-data-points (float (df/df-count data))]
+    (log/debug target-values)
+    (log/debug num-data-points)
     ;; Loop through each feature to consider splitting on that feature
     (reduce (fn [acc feature]
               (let [best-error      (:error acc)
                     best-feature    (:feature acc)
                     feature-values  (df/get-attribute-values data feature)
+                    _ (log/debug feature-values)
                     left-mistakes   (sub-branch-mistakes data (satisfies-pred? zero? feature-values) target)
                     right-mistakes  (sub-branch-mistakes data (satisfies-pred? #(= % 1) feature-values) target)
                     error           (/ (+ left-mistakes right-mistakes) num-data-points)]
@@ -229,10 +236,12 @@
     ;;   Reached maximum depth
 
    (let [target-values (df/get-attribute-values data target)
+         _ (log/debug "TARGET VALUES:" target-values)
          _ (log/debug "--------------------------------------------------------------------")
          _ (log/debug (format "Subtree, depth = %s (%s data points)." current-depth (count target-values)))
 
          class-counts (frequencies target-values)]
+     (log/debug class-counts)
      (cond (zero? (node-misclassified class-counts)) (do (log/debug "Stopping condition 1 reached.")
                                                           ;; If not mistakes at current node, make current node a leaf node
                                                           (create-leaf class-counts))
@@ -245,6 +254,7 @@
 
            :default (let [_ (log/debug "FELL THROUGH ALL")
                           result              (find-best-splitting-feature data features target)
+                          _ (log/debug "BEST:" result)
                           splitting-feature   (:feature result)
                           splitting-error     (:error result)
                           fvs                 (df/get-attribute-values data splitting-feature)

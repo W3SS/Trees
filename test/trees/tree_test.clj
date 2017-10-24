@@ -1,6 +1,7 @@
 (ns trees.tree-test
   (:require [clojure.test :refer :all]
-            [trees.tree :as t]))
+            [trees.tree :as t]
+            [trees.dataframe :as df]))
 
 
 (deftest get-majority-class
@@ -113,3 +114,35 @@
     (is (= (t/g-score t2 total) 3/20))
     (is (= (t/g-score t3 total) 1/20))
     (is (= (t/g-score t5 total) 1/20))))
+
+
+
+(def sample-data
+  [[:age :married? :own-house? :income :gender :class]
+   [22 :no :no 28000 :male :bad]
+   [46 :no :yes 32000 :female :bad]
+   [24 :yes :yes 24000 :male :bad]
+   [25 :no :no    27000 :male :bad]
+   [29 :yes :yes  32000 :female :bad]
+   [45 :yes :yes  30000 :female :good]
+   [63 :yes :yes  58000 :male :good]
+   [36 :yes :no   52000 :male :good]
+   [23 :no :yes   40000 :female :good]
+   [50 :yes :yes  28000 :female :good]])
+
+
+(defn yn-bool
+  [x]
+  (cond (= x :no) false
+        (= x :yes) true))
+
+
+(defn load-sample-data
+  []
+  (-> (df/from-tabular (first sample-data) (rest sample-data) {})
+      (df/typify-attribute-df :age          :int      :ordinal      identity)
+      (df/typify-attribute-df :married?     :boolean  :categorical  yn-bool)
+      (df/typify-attribute-df :own-house?   :boolean  :categorical  yn-bool)
+      (df/typify-attribute-df :income       :int      :ordinal      yn-bool)
+      (df/typify-attribute-df :gender       :enum     :categorical  identity)
+      (df/typify-attribute-df :class        :enum     :categorical  identity)))

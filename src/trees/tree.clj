@@ -35,7 +35,8 @@
 
 (defn terminal?
   [node]
-  (and (nil? (:left node))
+  (and (seq node)
+       (nil? (:left node))
        (nil? (:right node))))
 
 
@@ -120,8 +121,21 @@
 
 ;; STUBBED FOR NOW
 (defn get-initial-tree
-  [x]
-  x)
+  [tree total]
+  (when (seq tree)
+    (let [left  (:left tree)
+          right (:right tree)]
+      (if (and (terminal? left) (terminal? right)
+               (= (node-resubstitution-error tree total)
+                  (+ (node-resubstitution-error left total)
+                     (node-resubstitution-error right total))))
+        (dissoc tree :left :right)
+        (let [left-init   (get-initial-tree left total)
+              right-init  (get-initial-tree right total)]
+          (cond (and (seq left-init) (seq right-init)) (assoc tree :left left-init :right right-init)
+                  (seq left-init) (assoc tree :left left-init)
+                  (seq right-init) (assoc tree :right right-init)
+                :default tree))))))
 
 
 (defn prune-tree

@@ -103,6 +103,43 @@
     [minimum-score weakest-links]))
 
 
+
+;; NOTE: this would be much easier with mutable trees :(
+(defn prune-weakest-links
+  [tree weak-links]
+  (if (nil? tree)
+    nil
+    (if (some #(identical? tree %) weak-links)
+      (dissoc tree :left :right)
+      (let [left-pruned   (prune-weakest-links (:left tree) weak-links)
+            right-pruned  (prune-weakest-links (:right tree) weak-links)]
+        (cond (and (seq left-pruned) (seq right-pruned)) (assoc tree :left left-pruned :right right-pruned)
+              (seq left-pruned)   (assoc tree :left left-pruned)
+              (seq right-pruned)  (assoc tree :right right-pruned))))))
+
+
+;; STUBBED FOR NOW
+(defn get-initial-tree
+  [x]
+  x)
+
+
+(defn prune-tree
+  "Generates an upwards sequence of pruned trees starting from T1 <= Tmax"
+  [Tmax]
+  (let [total (total-number Tmax)]
+    (loop [alpha-k 0
+           Tk Tmax
+           acc [[alpha-k Tk]]]
+      (if (terminal? Tk)
+        acc
+        (let [[alpha-k+1 weakest-links] (prune-iteration Tk total)
+              Tk+1 (prune-weakest-links Tk weakest-links)]
+          (recur alpha-k+1 Tk+1 (conj acc [alpha-k+1 Tk+1])))))))
+
+
+
+
 (defn satisfies-pred?
   "Returns the indices of values which matched the predicate"
   [p xs]

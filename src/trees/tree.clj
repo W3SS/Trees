@@ -143,7 +143,7 @@
   [Tmax]
   (let [total (total-number Tmax)]
     (loop [alpha-k 0
-           Tk Tmax
+           Tk (get-initial-tree Tmax total)
            acc [[alpha-k Tk]]]
       (if (terminal? Tk)
         acc

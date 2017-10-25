@@ -121,3 +121,24 @@
   [truth predictions]
   (float (/ (sum (map #(if (= %1 %2) 1 0) truth predictions))
             (count truth))))
+
+
+
+;; reserve small amount of probability mass for events
+(defn gini-index
+  "AKA gini impurity"
+  [class-counts]
+  (let [total (sum (vals class-counts))]
+    (sum (for [[k c] class-counts
+               :let [relative-frequency (float (/ c total))]]
+           (* relative-frequency (- 1 relative-frequency))))))
+
+
+;; FIXME: log(0) is possible here, make a correction for zero probabilities
+(defn entropy
+  "AKA information gain"
+  [class-counts]
+  (let [total (sum (vals class-counts))]
+    (* -1.0 (sum (for [[k c] class-counts
+                       :let [relative-frequency (float (/ c total))]]
+                   (* relative-frequency (Math/log relative-frequency)))))))

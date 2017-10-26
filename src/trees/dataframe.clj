@@ -1,6 +1,7 @@
 (ns trees.dataframe
   (:require [clojure.java.io :as io]
             [clojure-csv.core :as csv]
+            [clojure.pprint :as pprint]
             [clj-time.core :as t]
             [clj-time.format :as tf]
             [taoensso.timbre :as log]))
@@ -213,9 +214,27 @@
                      :df/source-type ::csv)))))
 
 
+(defn df-keys
+  [df]
+  (remove (reserved-keys (keys df))))
+
+
+(defn print-data-frame
+  [df]
+  (doseq [k (remove reserved-keys (keys df))]
+    (print k " | "))
+  (println "")
+  (println "----------------------------------------------------")
+  (dotimes [i (df-count df)]
+    (doseq [v (vals (nth-row df i))]
+      (print v " | "))
+    (println "")))
+
+
 ;; NOTE: we have a tough time enforcing uniformity in data-length here. Have to rely on invariants at construction time.
 (def example-data-frame
-  {"A" {:values [1 2 3]
+  {:df/count 3
+   "A" {:values [1 2 3]
         :storage-type :int
         :domain-type :discrete}
    "B" {:values [5.0 6.0 7.0]

@@ -53,7 +53,12 @@ They are a class of nonparametric model suitable for both classification and reg
 
 ### Why should I use decision trees instead of some other method?
 
-They are interpretable by design and can be very accurate. [Scikit](http://scikit-learn.org/stable/modules/tree.html) gives
+* Interpretable by design, can be visualized as a flow-chart or ruleset
+* Support for missing values
+* Support for mixed categorical and numerical data
+* Can be very accurate, especially when ensembled 
+
+[Scikit](http://scikit-learn.org/stable/modules/tree.html) gives
 a list of good reasons to use them.
 
 ## References

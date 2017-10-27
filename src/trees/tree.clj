@@ -205,6 +205,8 @@
               (let [best-quality    (or (:quality acc) -10000)  ;; FIXME: figure out a better way to do this
                     feature-type    (df/get-attribute-domain-type data feature)
                     [quality value] (calculate-split feature-type data feature target impurity-measure parent-impurity)]
+                (log/debug "QUALITY: " quality)
+                (log/debug "BEST QUALITY: " best-quality)
                 (if (> quality best-quality)
                   {:quality quality
                    :feature feature
@@ -218,18 +220,19 @@
 (defn create-leaf
   "Given a mapping from class -> count in node,
   creates a tree leaf node"
-  [class-counts]
+  [class-counts answer]
   {:prediction (get-majority-class class-counts)
    :leaf? true
+   :answer answer
    :class-counts class-counts})
 
 
 (defn feature-type-predicate
   [value feature-type]
   (case feature-type
-    :numerical #(<= value %)
+    :numerical #(<= % value)
     :categorical #(contains? value %)
-    (throw (RuntimeException. "Unsupported feature type"))))
+    (throw (ex-info "Unsupported feature type" {:type feature-type}))))
 
 
 (defn pure?
@@ -264,13 +267,13 @@
      (log/debug "CLASS COUNTS: " class-counts)
      (cond (pure? class-counts) (do (log/debug "Stopping condition 1 reached.")
                                     ;; If not mistakes at current node, make current node a leaf node
-                                    (create-leaf class-counts))
+                                    (create-leaf class-counts :early-stop))
 
            (empty? features) (do (log/debug "Stopping condition 2 reached.")
-                                 (create-leaf class-counts))
+                                 (create-leaf class-counts :early-stop))
 
            (>= current-depth max_depth) (do (log/debug "Reached maximum depth. Stopping for now.")
-                                            (create-leaf class-counts))
+                                            (create-leaf class-counts :early-stop))
 
            :default (let [_ (log/debug "FELL THROUGH ALL")
                           parent-impurity     (impurity-measure class-counts)
@@ -293,15 +296,17 @@
                       ;; Create a leaf node if the split is "perfect"
                       (cond (= (df/df-count left-split) (df/df-count data))   (do
                                                                                 (log/debug "Creating leaf node.")
-                                                                                (create-leaf (frequencies (df/get-attribute-values left-split target))))
+                                                                                (create-leaf (frequencies (df/get-attribute-values left-split target))
+                                                                                             :yes))
                             (= (df/df-count right-split) (df/df-count data))  (do
                                                                                 (log/debug "Creating leaf node.")
-                                                                                (create-leaf (frequencies (df/get-attribute-values right-split target))))
-                            :default (let [left-tree  (learn left-split remaining-features target (inc current-depth) max_depth)
-                                           right-tree (learn right-split remaining-features target (inc current-depth) max_depth)]
+                                                                                (create-leaf (frequencies (df/get-attribute-values right-split target))
+                                                                                             :no))
+                            :default (let [left-tree  (learn left-split remaining-features target impurity-measure (inc current-depth) max_depth)
+                                           right-tree (learn right-split remaining-features target impurity-measure (inc current-depth) max_depth)]
                                        {:leaf? false
-                                        :left left-tree
-                                        :right right-tree
+                                        :left (assoc left-tree :answer :yes)
+                                        :right (assoc right-tree :answer :no)
                                         :class-counts class-counts
                                         :splitting-feature splitting-feature
                                         :splitting-value splitting-value
@@ -314,9 +319,20 @@
   [tree x]
   (if (:leaf? tree)
     (:prediction tree)
-    (if (zero? (get x (:splitting-feature tree)))
+    (let [splitting-feature (:splitting-feature tree)
+          observed-value    (get x splitting-feature)
+          splitting-value   (:splitting-value tree)
+          splitting-type    (:splitting-type tree)
+          predicate         (feature-type-predicate splitting-value splitting-type)]
+      (log/debug "SPLITTING ON:" splitting-feature splitting-type)
+      (log/debug "OBSERVED:" observed-value)
+      (when (= splitting-type :numerical)
+        (log/debug observed-value "<=" splitting-value "?" (predicate observed-value)))
+      (when (= splitting-type :categorical)
+        (log/debug observed-value "in" splitting-value "?" (predicate observed-value)))
+      (if (predicate observed-value)
         (recur (:left tree) x)
-        (recur (:right tree) x))))
+        (recur (:right tree) x)))))
 
 
 

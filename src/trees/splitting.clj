@@ -51,6 +51,7 @@
 (defn calculate-numerical-split
   "returns the impurity reduction"
   [data attribute target impurity-measure root-impurity]
+  (log/debug "CALCULATE NUMERICAL SPLIT ON" attribute)
   (let [attribute-values  (df/get-attribute-values data attribute)
         target-values     (df/get-attribute-values data target)]
     (->> attribute-values
@@ -65,6 +66,7 @@
 ;; TODO: not all of these HAVE to be evaluated
 (defn powerset
   [xs]
+  (log/info "POWERSET OF: " (vec xs))
   (reduce (fn [acc x]
             (->> acc
                  (map #(set (concat #{x} %)))
@@ -77,7 +79,10 @@
 ;; FIXME: hack until I figure out smarter method
 (defn compute-valid-subsets
   [xs]
+  (log/info "COMPUTE!")
   (case (count xs)
+    0 []
+    1 [#{(first xs)}]
     2 [#{(first xs)}]
     3 [#{(first xs)} #{(second xs)} #{(last xs)}]
     (-> xs (powerset) (rest) (butlast))))
@@ -94,6 +99,7 @@
    impurity-measure
    root-impurity
    potential-subset]
+  (log/debug "POTENTIAL SUBSET???" potential-subset)
   (let [left-indices    (satisfies-pred? #(contains? potential-subset %) attribute-values)
         left-num        (count left-indices)
         left-histogram  (frequencies (df/select-by-indices target-values left-indices))
@@ -115,6 +121,7 @@
 
 (defn calculate-categorical-split
   [data attribute target impurity-measure root-impurity]
+  (log/debug "CALCULATE CATEGORICAL SPLIT ON" attribute)
   (let [attribute-values  (df/get-attribute-values data attribute)
         target-values     (df/get-attribute-values data target)]
     (->> attribute-values

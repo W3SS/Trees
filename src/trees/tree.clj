@@ -21,7 +21,6 @@
 (defn node-misclassified
   "Sums the counts of non-majority classes within a node"
   [class-counts]
-  (log/debug class-counts)
   (sum (vals (dissoc class-counts (get-majority-class class-counts)))))
 
 
@@ -99,7 +98,7 @@
 
 (defn prune-iteration
   "Returns weakest links for a given iteration"
-  [tree total]
+  [total tree]
   (let [scored-nodes (sort-by first (for [t (get-non-terminal-nodes tree)] [(g-score t total) t]))
         ;; blegh this won't actually work
         minimum-score (ffirst scored-nodes)
@@ -150,9 +149,23 @@
            acc [[alpha-k Tk]]]
       (if (terminal? Tk)
         acc
-        (let [[alpha-k+1 weakest-links] (prune-iteration Tk total)
+        (let [[alpha-k+1 weakest-links] (prune-iteration total Tk)
               Tk+1 (prune-weakest-links Tk weakest-links)]
           (recur alpha-k+1 Tk+1 (conj acc [alpha-k+1 Tk+1])))))))
+
+
+(defn prune
+  [total Tk]
+  (when-not (terminal? Tk)
+    (let [[alpha-k+1 weakest-links] (prune-iteration total Tk)
+          Tk+1 (prune-weakest-links Tk weakest-links)]
+      [alpha-k+1 Tk+1])))
+
+
+(defn prune-tree'
+  [Tmax]
+  (let [produce-pruned-tree (comp (partial prune (total-number Tmax)) second)]
+    (take-while (complement nil?) (iterate produce-pruned-tree [0 Tmax]))))
 
 
 

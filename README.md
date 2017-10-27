@@ -15,17 +15,32 @@ and their ensembles, along with utilities for visualizing trees and generating s
 
 ```
 (require '[trees.dataframe :as df]
-         '[trees.tree :as t])
+         '[trees.tree :as t]
+         '[trees.examples :refer [load-iris-data]]
+         '[trees.measures :refer [accuracy]])
 
-(def iris-data (df/from-csv "iris.csv"))
+(def iris-data (load-iris-data))
+
+(def split (t/train-test-split iris-data 0.20))
+(def training-set (first split))
+(def test-set (df/df->maps (second split)))
+
 (def features #{"Sepal length" "Sepal width" "Petal length" "Petal width"})
-(def tree-classifier (t/learn iris-data features "Species"))
+(def target "Species")
 
-(t/classify tree-classifier {"Sepal length" 5.2
-                             "Sepal width"  3.5
-                             "Petal length" 1.4
-                             "Petal width"  0.2})
-;; => "I. setosa"
+(def iris-tree (t/learn training-set features target))
+
+
+(def truth (map #(get % "Species") test-set))
+(def predicted (map (partial t/classify iris-tree) test-set))
+
+(def total (count truth))
+
+(accuracy truth predicted)
+
+;; To view the tree:
+(require '[com.walmartlabs.datascope :as ds])
+(ds/view iris-tree)
 ```
 
 ## FAQ

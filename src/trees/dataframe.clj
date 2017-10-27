@@ -65,8 +65,7 @@
   [data-frame n]
   (into {}
         (for [[k m] data-frame
-              :when (not (reserved-keys k))
-              ]
+              :when (not (reserved-keys k))]
           [k (nth (:values m) n)])))
 
 
@@ -75,6 +74,10 @@
   [df]
   (:df/count df))
 
+
+(defn df->maps
+  [df]
+  (map #(nth-row df %) (range (df-count df))))
 
 
 (defn select-by-indices

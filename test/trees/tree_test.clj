@@ -131,10 +131,20 @@
    [50 :yes :yes  28000 :female :good]])
 
 
+(def rich-example {:age 50 :married? true :own-house? true :income 200000 :gender :male})
+(def poor-example {:age 50 :married? true :own-house? false :income 25000 :gender :male})
+(def notes-example {:age 42 :married? false :own-house? true :income 30000 :gender :male})
+
+
 (defn yn-bool
   [x]
   (cond (= x :no) false
         (= x :yes) true))
+
+
+(defn parse-float
+  [x]
+  (Float/parseFloat x))
 
 
 (defn load-sample-data
@@ -146,3 +156,14 @@
       (df/typify-attribute-df :income       :int      :numerical    identity)
       (df/typify-attribute-df :gender       :enum     :categorical  identity)
       (df/typify-attribute-df :class        :enum     :categorical  identity)))
+
+
+
+(defn load-iris-data
+  []
+  (-> (df/from-csv "resources/data/iris.tsv" \tab)
+      (df/typify-attribute-df "Petal width"   :float :numerical parse-float)
+      (df/typify-attribute-df "Sepal width"   :float :numerical parse-float)
+      (df/typify-attribute-df "Petal length"  :float :numerical parse-float)
+      (df/typify-attribute-df "Sepal length"  :float :numerical parse-float)
+      (df/typify-attribute-df "Species"       :enum :categorical identity)))

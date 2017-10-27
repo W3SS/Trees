@@ -13,7 +13,7 @@
 
 (defn get-attribute-values
   [data feature]
-  (log/debug "GET " feature)
+  ;;(log/debug "GET " feature)
   (get-in data [feature :values]))
 
 

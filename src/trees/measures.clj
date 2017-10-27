@@ -1,5 +1,6 @@
 (ns trees.measures
-  (:require [trees.math :as m :refer [sum]]))
+  (:require [trees.math :as m :refer [sum]]
+            [taoensso.timbre :as log]))
 
 
 ;; Given a learning sample L for a J class problem
@@ -124,14 +125,32 @@
 
 
 
+(defn resubstitution-error
+  [class-counts]
+  (let [vs (vals class-counts)]
+    (- 1 (/ (apply max vs) (sum vs)))))
+
+
+
 ;; reserve small amount of probability mass for events
 (defn gini-index
   "AKA gini impurity"
   [class-counts]
-  (let [total (sum (vals class-counts))]
-    (sum (for [[k c] class-counts
-               :let [relative-frequency (float (/ c total))]]
-           (* relative-frequency (- 1 relative-frequency))))))
+  ;; FIXME: hack until I figure out what's up
+  (if (= (count class-counts) 2)
+    (let[A (second (first class-counts))
+         B (second (second class-counts))
+         N (+ A B)]
+      ;;(println (/ A N) "*" (/ B N) "=" (* (/ A N) (/ B N)))
+      (float (* (/ A N) (/ B N))))
+  (let [total (sum (vals class-counts))
+        probs (for [[k c] class-counts
+                    :let [relative-frequency (/ c total)]]
+                (do ;;(println relative-frequency "* (1 - " relative-frequency ")" " = " (* relative-frequency (- 1 relative-frequency)))
+                  (* relative-frequency (- 1 relative-frequency))))]
+    ;;(println "CLASS COUNTS: " class-counts)
+    ;;(println "sum = "(sum (vec probs)))
+    (sum probs))))
 
 
 ;; FIXME: log(0) is possible here, make a correction for zero probabilities
@@ -142,3 +161,14 @@
     (* -1.0 (sum (for [[k c] class-counts
                        :let [relative-frequency (float (/ c total))]]
                    (* relative-frequency (Math/log relative-frequency)))))))
+
+
+(defn split-quality
+  [impurity-measure root-impurity left-proportion left-class-counts right-proportion right-class-counts]
+  ;; delta_i(s,t) = i(t) - pi(l)i(l) - pi(r)i(r)
+  ;(log/debug "ROOT:" root-impurity)
+  ;;(log/debug "LEFT" left-class-counts " PROPORTION: " left-proportion " IMPURITY: " (impurity-measure left-class-counts))
+  ;(log/debug "RIGHT:" right-class-counts "PROPORTION: " right-proportion " IMPURITY: " (impurity-measure right-class-counts))
+  (- root-impurity
+     (* left-proportion (impurity-measure left-class-counts))
+     (* right-proportion (impurity-measure right-class-counts))))

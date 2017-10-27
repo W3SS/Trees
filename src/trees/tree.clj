@@ -4,7 +4,9 @@
             [clojure.java.io :as io]
             [trees.dataframe :as df]
             [trees.math :refer [sum]]
-            [taoensso.timbre :as log])
+            [trees.splitting :refer [calculate-split]]
+            [taoensso.timbre :as log]
+            [trees.measures :as m])
   (:import (clojure.lang ILookup)))
 
 
@@ -189,9 +191,10 @@
 
 (defn find-best-splitting-feature
   "Searches across all features to find the one with lowest error"
-  [data features target]
-  (log/debug features)
-  (log/debug target)
+  [data features target impurity-measure parent-impurity]
+  (log/debug "SEARCHING FOR BEST SPLITTING FEATURE")
+  (log/debug "FEATURES: " features)
+  (log/debug "TARGET: " target)
   ;; TODO: why get these a second time? Already calculated them before
   (let [target-values   (df/get-attribute-values data target)
         num-data-points (float (df/df-count data))]
@@ -199,17 +202,16 @@
     (log/debug num-data-points)
     ;; Loop through each feature to consider splitting on that feature
     (reduce (fn [acc feature]
-              (let [best-error      (:error acc)
-                    best-feature    (:feature acc)
-                    feature-values  (df/get-attribute-values data feature)
-                    _ (log/debug feature-values)
-                    left-mistakes   (sub-branch-mistakes data (satisfies-pred? zero? feature-values) target)
-                    right-mistakes  (sub-branch-mistakes data (satisfies-pred? #(= % 1) feature-values) target)
-                    error           (/ (+ left-mistakes right-mistakes) num-data-points)]
-                (if (< error best-error)
-                  {:error error :feature feature}
+              (let [best-quality    (or (:quality acc) -10000)  ;; FIXME: figure out a better way to do this
+                    feature-type    (df/get-attribute-domain-type data feature)
+                    [quality value] (calculate-split feature-type data feature target impurity-measure parent-impurity)]
+                (if (> quality best-quality)
+                  {:quality quality
+                   :feature feature
+                   :feature-type feature-type
+                   :value value}
                   acc)))
-            {:error 2.0 :feature nil}
+            {}
             features)))
 
 
@@ -222,9 +224,30 @@
    :class-counts class-counts})
 
 
+(defn feature-type-predicate
+  [value feature-type]
+  (case feature-type
+    :numerical #(<= value %)
+    :categorical #(contains? value %)
+    (throw (RuntimeException. "Unsupported feature type"))))
+
+
+(defn pure?
+  [class-counts]
+  (zero? (node-misclassified class-counts)))
+
+
+(defn log-message
+  [target-values current-depth]
+  (do
+    (log/debug "TARGET VALUES:" target-values)
+    (log/debug "--------------------------------------------------------------------")
+    (log/debug (format "Subtree, depth = %s (%s data points)." current-depth (count target-values)))))
+
+
 (defn learn
-  ([data features target] (learn data features target 0 10))
-  ([data features target current-depth max_depth]
+  ([data features target] (learn data features target m/gini-index 0 10))
+  ([data features target impurity-measure current-depth max_depth]
    (df/validate! data)
    (when (not (set? features))
      (throw (IllegalArgumentException. "features must be a set")))
@@ -235,16 +258,13 @@
     ;; Stopping condition 3:
     ;;   Reached maximum depth
 
-   (let [target-values (df/get-attribute-values data target)
-         _ (log/debug "TARGET VALUES:" target-values)
-         _ (log/debug "--------------------------------------------------------------------")
-         _ (log/debug (format "Subtree, depth = %s (%s data points)." current-depth (count target-values)))
-
-         class-counts (frequencies target-values)]
-     (log/debug class-counts)
-     (cond (zero? (node-misclassified class-counts)) (do (log/debug "Stopping condition 1 reached.")
-                                                          ;; If not mistakes at current node, make current node a leaf node
-                                                          (create-leaf class-counts))
+   (let [target-values    (df/get-attribute-values data target)
+         _ (log-message target-values current-depth)
+         class-counts     (frequencies target-values)]
+     (log/debug "CLASS COUNTS: " class-counts)
+     (cond (pure? class-counts) (do (log/debug "Stopping condition 1 reached.")
+                                    ;; If not mistakes at current node, make current node a leaf node
+                                    (create-leaf class-counts))
 
            (empty? features) (do (log/debug "Stopping condition 2 reached.")
                                  (create-leaf class-counts))
@@ -253,13 +273,19 @@
                                             (create-leaf class-counts))
 
            :default (let [_ (log/debug "FELL THROUGH ALL")
-                          result              (find-best-splitting-feature data features target)
+                          parent-impurity     (impurity-measure class-counts)
+                          result              (find-best-splitting-feature data features target impurity-measure parent-impurity)
                           _ (log/debug "BEST:" result)
                           splitting-feature   (:feature result)
-                          splitting-error     (:error result)
+                          splitting-value     (:value result)
+                          splitting-type      (:feature-type result)
+                          splitting-quality   (:quality result)
+
+                          splitting-pred      (feature-type-predicate splitting-value splitting-type)
+
                           fvs                 (df/get-attribute-values data splitting-feature)
-                          left-split          (df/select-by-indices-df data (satisfies-pred? zero? fvs))
-                          right-split         (df/select-by-indices-df data (satisfies-pred? #(= % 1) fvs))
+                          left-split          (df/select-by-indices-df data (satisfies-pred? splitting-pred fvs))
+                          right-split         (df/select-by-indices-df data (satisfies-pred? (complement splitting-pred) fvs))
                           remaining-features  (disj features splitting-feature)]
 
                       (log/debug (format "Split on feature %s. (%s, %s)" splitting-feature (df/df-count left-split) (df/df-count right-split)))
@@ -277,7 +303,9 @@
                                         :left left-tree
                                         :right right-tree
                                         :class-counts class-counts
-                                        :splitting-feature splitting-feature})))))))
+                                        :splitting-feature splitting-feature
+                                        :splitting-value splitting-value
+                                        :splitting-type splitting-type})))))))
 
 
 (defn classify

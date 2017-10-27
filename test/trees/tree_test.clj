@@ -140,9 +140,9 @@
 (defn load-sample-data
   []
   (-> (df/from-tabular (first sample-data) (rest sample-data) {})
-      (df/typify-attribute-df :age          :int      :ordinal      identity)
+      (df/typify-attribute-df :age          :int      :numerical    identity)
       (df/typify-attribute-df :married?     :boolean  :categorical  yn-bool)
       (df/typify-attribute-df :own-house?   :boolean  :categorical  yn-bool)
-      (df/typify-attribute-df :income       :int      :ordinal      yn-bool)
+      (df/typify-attribute-df :income       :int      :numerical    identity)
       (df/typify-attribute-df :gender       :enum     :categorical  identity)
       (df/typify-attribute-df :class        :enum     :categorical  identity)))

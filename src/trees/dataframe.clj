@@ -22,6 +22,11 @@
   (get-in data [feature :storage-type]))
 
 
+(defn get-attribute-domain-type
+  [data attribute]
+  (get-in data [attribute :domain-type]))
+
+
 (def reserved-keys #{:df/count :df/source :df/source-type})
 
 

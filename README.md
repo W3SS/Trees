@@ -1,19 +1,21 @@
 # Trees 
 
+Classification And Regression Trees in Clojure
+
 ![image of olive tree](olive.png)
 
-Classification And Regression Trees
  
 ## Overview 
+
+🚧 __WARNING: THIS SOFTWARE IS STILL PRE-ALPHA__ 🚧 
 
 This library supports the construction and interpretation of decision trees
 and their ensembles, along with utilities for visualizing trees and generating summaries of data. 
 
-🚧 __WARNING: THIS SOFTWARE IS STILL PRE-ALPHA__ 🚧 
 
-## Usage
+## Example Usage
 
-```
+```clj
 (require '[trees.dataframe :as df]
          '[trees.tree :as t]
          '[trees.examples :refer [load-iris-data]]

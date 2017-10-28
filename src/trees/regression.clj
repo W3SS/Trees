@@ -27,14 +27,18 @@
               (let [best-quality    (or (:quality acc) -10000)  ;; FIXME: figure out a better way to do this
                     feature-type    (df/get-attribute-domain-type data feature)
                     [quality value] (calculate-regression-split feature-type data feature target parent-impurity)]
+                (when (nil? quality)
+                  (log/debug "NIL QUALITY ON ATTR:" feature)
+                  (log/debug "GIVEN VALUES: " (df/get-attribute-values data feature))
+                  )
                 (log/debug "QUALITY: " quality)
                 (log/debug "BEST QUALITY: " best-quality)
-                (if (> quality best-quality)
-                  {:quality quality
-                   :feature feature
-                   :feature-type feature-type
-                   :value value}
-                  acc)))
+                (cond (nil? quality) acc
+                      (> quality best-quality) {:quality quality
+                                                :feature feature
+                                                :feature-type feature-type
+                                                :value value}
+                      :default acc)))
             {}
             features)))
 

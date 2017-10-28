@@ -113,5 +113,5 @@
   (let [left-yhat   (mean left-ys)
         right-yhat  (mean right-ys)]
     (- Rt
-       (sum-of-squared-deviations* left-ys left-yhat)
-       (sum-of-squared-deviations* right-ys right-yhat))))
+       (or (sum-of-squared-deviations* left-ys left-yhat) 0)
+       (or (sum-of-squared-deviations* right-ys right-yhat) 0))))

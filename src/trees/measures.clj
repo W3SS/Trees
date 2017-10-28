@@ -87,3 +87,31 @@
   (- root-impurity
      (* left-proportion (impurity-measure left-class-counts))
      (* right-proportion (impurity-measure right-class-counts))))
+
+
+(defn sum-of-squared-deviations
+  "Computes sum( (yi - yhati)^2 for yi in ys, yhati in yhats)"
+  [ys yhats]
+  (sum (map #(Math/pow (- %1 %2) 2) ys yhats)))
+
+
+(defn sum-of-squared-deviations*
+  "Computes sum( (yi - yhat)^2 for yi in ys)"
+  [ys yhat]
+  (sum (map #(Math/pow (- % yhat) 2) ys)))
+
+
+(defn mean
+  "Computes mean of sequence"
+  [xs]
+  (when (seq xs)
+    (/ (sum xs) (count xs))))
+
+
+(defn node-ssd
+  [Rt left-ys right-ys]
+  (let [left-yhat   (mean left-ys)
+        right-yhat  (mean right-ys)]
+    (- Rt
+       (sum-of-squared-deviations* left-ys left-yhat)
+       (sum-of-squared-deviations* right-ys right-yhat))))

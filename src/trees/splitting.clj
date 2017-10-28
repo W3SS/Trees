@@ -130,3 +130,46 @@
     :numerical    (apply calculate-numerical-split args)
     :categorical  (apply calculate-categorical-split args)
     (throw (ex-info "Not supported" {:type feature-type}))))
+
+
+
+;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+;;                  R E G R E S S I O N
+;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+(defn score-potential-regression-threshold
+  [attribute-values
+   target-values
+   root-impurity
+   potential-threshold]
+  (let [left-indices    (satisfies-pred? #(<= potential-threshold %) attribute-values)
+        left-response   (df/select-by-indices target-values left-indices)
+
+        right-indices   (satisfies-pred? #(> potential-threshold %) attribute-values)
+        right-response  (df/select-by-indices target-values right-indices)
+
+        quality         (m/node-ssd root-impurity left-response right-response)]
+    [quality potential-threshold]))
+
+
+(defn calculate-numerical-regression-split
+  "returns the impurity reduction"
+  [data attribute target root-impurity]
+  (log/debug "CALCULATE NUMERICAL SPLIT ON" attribute)
+  (let [attribute-values  (df/get-attribute-values data attribute)
+        target-values     (df/get-attribute-values data target)]
+    (->> attribute-values
+         (sort)
+         (distinct)
+         (compute-midpoints)
+         (map (partial score-potential-regression-threshold attribute-values target-values root-impurity))
+         (sort-by first >)
+         (first))))
+
+
+(defn calculate-regression-split
+  [feature-type & args]
+  (case feature-type
+    :numerical    (apply calculate-numerical-regression-split args)
+    (throw (ex-info "Not supported" {:type feature-type}))))

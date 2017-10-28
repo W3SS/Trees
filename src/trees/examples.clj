@@ -52,3 +52,25 @@
       (df/typify-attribute-df "Petal length" :float :numerical parse-float)
       (df/typify-attribute-df "Sepal length" :float :numerical parse-float)
       (df/typify-attribute-df "Species" :enum :categorical identity)))
+
+
+;(def features #{"crim" "zn" "indus" "chas" "nox" "rm" "age" "dis" "rad" "tax" "ptratio" "black" "lstat"})
+;(def target #{"medv"})
+
+(defn load-housing-data
+  []
+  (-> (df/from-csv "resources/data/housing.csv")
+      (df/typify-attribute-df "crim" :float :numerical parse-float)
+      (df/typify-attribute-df "zn" :float :numerical parse-float)
+      (df/typify-attribute-df "indus" :float :numerical parse-float)
+      (df/typify-attribute-df "chas" :float :numerical parse-float)
+      (df/typify-attribute-df "nox" :float :numerical parse-float)
+      (df/typify-attribute-df "rm" :float :numerical parse-float)
+      (df/typify-attribute-df "age" :float :numerical parse-float)
+      (df/typify-attribute-df "dis" :float :numerical parse-float)
+      (df/typify-attribute-df "rad" :float :numerical parse-float)
+      (df/typify-attribute-df "tax" :float :numerical parse-float)
+      (df/typify-attribute-df "ptratio" :float :numerical parse-float)
+      (df/typify-attribute-df "black" :float :numerical parse-float)
+      (df/typify-attribute-df "lstat" :float :numerical parse-float)
+      (df/typify-attribute-df "medv" :float :numerical parse-float)))

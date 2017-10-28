@@ -1,6 +1,6 @@
 (ns trees.tree-test
   (:require [clojure.test :refer :all]
-            [trees.tree :as t]
+            [trees.core :as t]
             [trees.dataframe :as df]))
 
 

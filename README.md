@@ -16,27 +16,26 @@ and their ensembles, along with utilities for visualizing trees and generating s
 ## Example Usage
 
 ```clj
-(require '[trees.dataframe :as df]
-         '[trees.tree :as t]
+(require '[trees.core :refer [learn classify]]
+         '[trees.dataframe :refer [df->maps]]
          '[trees.examples :refer [load-iris-data]]
-         '[trees.measures :refer [accuracy]])
+         '[trees.measures :refer [accuracy]]
+         '[trees.sampling :refer [train-test-split]])
 
 (def iris-data (load-iris-data))
 
-(def split (t/train-test-split iris-data 0.20))
+(def split (train-test-split iris-data 0.20))
 (def training-set (first split))
-(def test-set (df/df->maps (second split)))
+(def test-set (df->maps (second split)))
 
 (def features #{"Sepal length" "Sepal width" "Petal length" "Petal width"})
 (def target "Species")
 
-(def iris-tree (t/learn training-set features target))
+(def iris-tree (learn training-set features target))
 
 
 (def truth (map #(get % "Species") test-set))
-(def predicted (map (partial t/classify iris-tree) test-set))
-
-(def total (count truth))
+(def predicted (map #(classify iris-tree %) test-set))
 
 (accuracy truth predicted)
 

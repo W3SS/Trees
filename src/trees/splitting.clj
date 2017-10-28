@@ -1,13 +1,8 @@
 (ns trees.splitting
-  (:require [trees.dataframe :as df]
+  (:require [trees.common :refer [satisfies-pred?]]
+            [trees.dataframe :as df]
             [trees.measures :as m]
             [taoensso.timbre :as log]))
-
-
-(defn satisfies-pred?
-  "Returns the indices of values which matched the predicate"
-  [p xs]
-  (keep-indexed (fn [i v] (when (p v) i)) xs))
 
 
 ;; NOTE: what about the boundary values? Most things are going to be above/below them...
@@ -88,9 +83,6 @@
     (-> xs (powerset) (rest) (butlast))))
 
 
-
-
-
 ;; TODO: DRY This
 ;; NOTE: what about the boundary values? Most things are going to be above/below them...
 (defn score-potential-subset
@@ -130,7 +122,6 @@
          (map (partial score-potential-subset attribute-values target-values impurity-measure root-impurity))
          (sort-by first >)
          (first))))
-
 
 
 (defn calculate-split

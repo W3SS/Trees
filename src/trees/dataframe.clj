@@ -11,6 +11,9 @@
 ;;
 ;; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+(def reserved-keys #{:df/count :df/source :df/source-type})
+
+
 (defn get-attribute-values
   [data feature]
   ;;(log/debug "GET " feature)
@@ -27,7 +30,9 @@
   (get-in data [attribute :domain-type]))
 
 
-(def reserved-keys #{:df/count :df/source :df/source-type})
+(defn transform
+  [data attribute function]
+  (update-in data [attribute :values] (partial map function)))
 
 
 (defn validate!
@@ -87,12 +92,11 @@
             (transient [])
             is)))
 
-;; TODO: preserve count and other metadata
+
 (defn select-by-indices-df
   "Given a set of indices, we return a new dataframe
   with the selected values"
   [df is]
-  ;;(println "GIVEN INDICES: " is)
   (assoc
     (into {}
           (for [[k m] df
@@ -104,6 +108,11 @@
     :df/source (:df/source df)
     :df/source-type (:df/source-type df)))
 
+
+(defn select-attribute-subset
+  [df attributes]
+  (into (select-keys df reserved-keys)
+        (for [attr attributes] [attr (get df attr)])))
 
 
 (defn typify-attribute-df
